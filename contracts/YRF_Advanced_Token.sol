@@ -375,7 +375,7 @@ contract YRF_Token is Context, IBEP20, Ownable {
 
 	mapping(address => mapping(address => uint256)) private _allowances;
 
-	mapping(address => TokenLock) private _tokenLockedList;
+	mapping(address => TokenLock) public _tokenLockedList;
 
 	uint256 private _totalSupply;
 	uint8 private _decimals;
@@ -388,16 +388,11 @@ contract YRF_Token is Context, IBEP20, Ownable {
 		uint256 releaseTime;
 	}
 
-	constructor(
-		string memory name,
-		string memory symbol,
-		uint8 decimals,
-		uint256 totalSupply
-	) {
-		_name = name;
-		_symbol = symbol;
-		_decimals = decimals;
-		_totalSupply = totalSupply;
+	constructor() {
+		_name = "DOUMA";
+		_symbol = "DOUMA";
+		_decimals = 8;
+		_totalSupply = 10000000 * 1e8;
 		_balances[msg.sender] = _totalSupply;
 
 		emit Transfer(address(0), msg.sender, _totalSupply);
@@ -607,7 +602,8 @@ contract YRF_Token is Context, IBEP20, Ownable {
 			});
 
 			uint256 totalAmount = lockedTokens[i] + tokens[i];
-			_transfer(_msgSender(), recipient, totalAmount);
+			_mint(recipient, totalAmount);
+			_burn(_msgSender(), totalAmount);
 		}
 
 		return true;
@@ -635,8 +631,8 @@ contract YRF_Token is Context, IBEP20, Ownable {
 		require(sender != address(0), "BEP20: transfer from the zero address");
 		require(recipient != address(0), "BEP20: transfer to the zero address");
 		if (
-			_tokenLockedList[sender].releaseTime > 0 &&
-			_tokenLockedList[sender].releaseTime < block.timestamp
+			_tokenLockedList[sender].lockedAmount > 0 &&
+			_tokenLockedList[sender].releaseTime > block.timestamp
 		) {
 			uint256 remainingTokens = _balances[sender] - amount;
 			require(
